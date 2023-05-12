@@ -3,9 +3,10 @@ project(segmentation_example_cpp)
 
 find_package(Threads)
 find_package(OpenCV REQUIRED)
+set(HailoRT_DIR "${CMAKE_PREFIX_PATH}")
 find_package(HailoRT REQUIRED)
 
-set(COMPILE_OPTIONS_CPP -Wall -Werror -O3)
+set(COMPILE_OPTIONS_CPP -Wall -Werror -Wno-unused -O3)
 
 file(GLOB SOURCES ./*.cpp)
 

@@ -6,7 +6,9 @@ set(CMAKE_CXX_STANDARD 20)
 set(COMPILE_OPTIONS -Wall -Werror -O3 -DNDEBUG -fconcepts -Wno-unused-local-typedefs)
 
 find_package(Threads)
-find_package(HailoRT 4.10.0 EXACT REQUIRED)
+set(HailoRT_DIR "${CMAKE_PREFIX_PATH}")
+# find_package(HailoRT 4.10.0 EXACT REQUIRED)
+find_package(HailoRT REQUIRED)
 find_package(OpenCV REQUIRED)
 message(STATUS "Found OpenCV: " ${OpenCV_INCLUDE_DIRS})
 
@@ -15,7 +17,7 @@ file(GLOB SOURCES
     ./*.cpp
 )
 
-link_libraries(stdc++fs)
+# link_libraries(stdc++fs)
 add_executable(${PROJECT_NAME} ${SOURCES})
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories("./xtl/include" "./xtensor/include" "./common/" "./rapidjson/include/rapidjson")

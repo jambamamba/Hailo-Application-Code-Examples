@@ -1,0 +1,7 @@
+# Osm
+data
+out
+segmentation_example_cpp/build/
+yolov5_yolov7_detection_cpp/build/
+RE-ID_example_code/build/
+

@@ -130,6 +130,7 @@ hailo_status read_all(OutputVStream& output_vstream, std::shared_ptr<FeatureData
 
 hailo_status write_all(InputVStream& input_vstream, std::string video_path, 
                         std::chrono::time_point<std::chrono::system_clock>& write_time_vec, std::vector<cv::Mat>& frames) {
+    (void)video_path;
     m.lock();
     std::cout << CYAN << "-I- Started write thread: " << info_to_str(input_vstream.get_info()) << std::endl << RESET;
     m.unlock();
@@ -139,8 +140,10 @@ hailo_status write_all(InputVStream& input_vstream, std::string video_path,
     auto input_shape = input_vstream.get_info().shape;
     int height = input_shape.height;
     int width = input_shape.width;
+    printf("input_vstream.get_info %i,%i\n", width, height);
 
 
+    //osm
     cv::VideoCapture capture(video_path);
     if(!capture.isOpened())
         throw "Unable to read video file";
@@ -149,19 +152,34 @@ hailo_status write_all(InputVStream& input_vstream, std::string video_path,
     cv::Mat org_frame;
 
     write_time_vec = std::chrono::high_resolution_clock::now();
-    for(;;) {
+    //osm for(;;) {
+    for(int num = 1;; ++num) {
+        printf("------------1\n");
         capture >> org_frame;
+        printf("------------2\n");
+        // char filename[256] = {0};
+        // sprintf(filename, "/data/out.%i.png", num);
+        // printf("reading frame from %s\n", filename);
+        // org_frame = cv::imread(filename, cv::IMREAD_COLOR);
+        // printf("------------2.1\n");
         if(org_frame.empty()) {
+            printf("------------x-x-----\n");
             break;
             }
+        printf("------------3\n");
 
+        printf("resize frame to %ix%i\n", width, height);
         cv::resize(org_frame, frames[i], cv::Size(height, width), 1);
+        printf("------------4\n");
 
+        printf("input_vstream.write input_vstream.get_frame_size: %lu\n", input_vstream.get_frame_size()); 
         input_vstream.write(MemoryView(frames[i].data, input_vstream.get_frame_size())); // Writing height * width, 3 channels of uint8
         if (HAILO_SUCCESS != status)
             return status;
         i++;
+        printf("------------5\n");
     }
+    printf("------------6\n");
 
     capture.release();
     return HAILO_SUCCESS;
@@ -356,14 +374,14 @@ int main(int argc, char** argv) {
 
     print_net_banner(vstreams);
 
-    cv::VideoCapture capture(video_path);
-    if (!capture.isOpened()){
-        throw "Error when reading video";
-    }
-    double frame_count = capture.get(cv::CAP_PROP_FRAME_COUNT);
-    double org_height = capture.get(cv::CAP_PROP_FRAME_HEIGHT);
-    double org_width = capture.get(cv::CAP_PROP_FRAME_WIDTH);
-    capture.release();
+    // cv::VideoCapture capture(video_path);
+    // if (!capture.isOpened()){
+    //     throw "Error when reading video";
+    // }
+    double frame_count = 285;//osm capture.get(cv::CAP_PROP_FRAME_COUNT);
+    double org_height = 1024;//osm capture.get(cv::CAP_PROP_FRAME_HEIGHT);
+    double org_width = 1920;//osm capture.get(cv::CAP_PROP_FRAME_WIDTH);
+    // capture.release();
 
     status = run_inference(std::ref(vstreams.first), 
                         std::ref(vstreams.second), 

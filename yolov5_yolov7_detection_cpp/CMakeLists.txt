@@ -14,6 +14,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 
 find_package(Threads)
 
+set(HailoRT_DIR "${CMAKE_PREFIX_PATH}")
 find_package(HailoRT REQUIRED)
 
 find_package( OpenCV REQUIRED)
@@ -24,7 +25,7 @@ file(GLOB SOURCES
     ./*.cpp
 )
 
-link_libraries(stdc++fs)
+# link_libraries(stdc++fs)
 add_executable(${PROJECT_NAME} ${SOURCES})
 include_directories(${OpenCV_INCLUDE_DIRS})
 include_directories(${ONNXRUNTIME_INCLUDE_DIR})

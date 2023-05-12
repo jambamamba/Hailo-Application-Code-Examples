@@ -15,11 +15,13 @@
  * This example demonstrates using virtual streams over c++
  **/
 
+#include <cstddef>
 #include "hailo/hailort.hpp"
 
 #include <opencv2/opencv.hpp>
 #include "cityscape_labels.hpp"
 #include <chrono>
+#include <thread>
 
 using hailort::Device;
 using hailort::Hef;
@@ -56,7 +58,7 @@ std::string getCmdOption(int argc, char *argv[], const std::string &option) {
     return cmd;
 }
 
-Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(Device &device, const std::string &hef_file) {
+Expected<std::shared_ptr<ConfiguredNetworkGroup>> configure_network_group(hailort::Device &device, const std::string &hef_file) {
     auto hef = Hef::create(hef_file);
     if (!hef) {
         return make_unexpected(hef.status());
@@ -87,22 +89,36 @@ template <typename T> hailo_status write_all(std::vector<InputVStream> &input, s
     cv::Mat frame;
     if(!capture.isOpened())
         throw "Unable to read video file";
-    for( ; ; ) {
+    for( int num = 0; ; ++num) {
+        printf("loading frame %i\n", num);
         capture >> frame;
+        printf("loaded frame %i\n", num);
         if(frame.empty()) {
             break;
             }
-        if (frame.channels() == 3)
+        printf("good frame %i\n", num);
+        if (frame.channels() == 3){
+            printf("cvtColor COLOR_BGR2RGB\n");
             cv::cvtColor(frame, frame, cv::COLOR_BGR2RGB);
+        }
     
-        if (frame.rows != height || frame.cols != width)
+        if (frame.rows != height || frame.cols != width){
+            printf("resize %i x %i\n", width, height);
             cv::resize(frame, frame, cv::Size(width, height), cv::INTER_AREA);
+        }
         
+        printf("---- 1\n");
         int factor = std::is_same<T, uint8_t>::value ? 1 : 4;  // In case we use float32_t, we have 4 bytes per component
+        printf("---- 2, factor: %i\n", factor);
         auto status = input[0].write(MemoryView(frame.data, height * width * channels * factor)); // Writing height * width, 3 channels of uint8
-        if (HAILO_SUCCESS != status) 
+        printf("---- 3\n");
+        if (HAILO_SUCCESS != status) {
+            printf("---- 4\n");
             return status;      
+        }
+        printf("---- 5\n");
     }
+    printf("---- 6\n");
     std::cout << "-I- Finished write thread " << video_path << std::endl;
     return HAILO_SUCCESS;
 }
@@ -160,16 +176,19 @@ template <typename IN_T, typename OUT_T> hailo_status infer(std::vector<InputVSt
     hailo_status output_status = HAILO_UNINITIALIZED;
     std::vector<std::thread> output_threads;
 
+    printf("infer video %s\n", video_path.c_str());
     cv::VideoCapture capture(video_path);
     if (!capture.isOpened()){
         throw "Error when reading video";
     }
     int frame_count = capture.get(cv::CAP_PROP_FRAME_COUNT);
+    printf("frame count: %i\n", frame_count);
     capture.release();
 
     int input_height = inputs.front().get_info().shape.height;
     int input_width = inputs.front().get_info().shape.width;
     int input_channels = inputs.front().get_info().shape.features;
+    printf("input_width %i, input_height %i, input_channels %i\n\n", input_width, input_height, input_channels);
     std::thread input_thread([&inputs, &video_path, &input_height, &input_width, &input_channels, &input_status]() { 
                             input_status = write_all<IN_T>(inputs, video_path, input_height, input_width, input_channels); 
                             });
@@ -177,19 +196,27 @@ template <typename IN_T, typename OUT_T> hailo_status infer(std::vector<InputVSt
     for (auto &output: outputs){
         int output_height = output.get_info().shape.height;
         int output_width = output.get_info().shape.width;
+        printf("output_width %i, output_height %i\n\n", output_width, output_height);
         output_threads.push_back( std::thread([&output, &video_path, &output_height, &output_width, &output_status, &frame_count]() { 
                             output_status = read_all<OUT_T>(output, video_path, output_height, output_width, frame_count); 
                             }) );
     }
 
+    printf("input_thread.join()\n");
     input_thread.join();
+    printf("input_thread.joined\n");
     
-    for (auto &out: output_threads)
+    for (auto &out: output_threads){
+        printf("out.join()\n");
         out.join();
+        printf("out.joined\n");
+    }
 
+    printf("----------- x\n");
     if ((HAILO_SUCCESS != input_status) || (HAILO_SUCCESS != output_status)) {
         return HAILO_INTERNAL_FAILURE;
     }
+    printf("----------- y\n");
 
     std::cout << "\n-I- Inference finished successfully\n" << std::endl;
     return HAILO_SUCCESS;
@@ -199,11 +226,11 @@ template <typename IN_T, typename OUT_T> hailo_status infer(std::vector<InputVSt
 int main(int argc, char** argv) {
     std::string hef_file   = getCmdOption(argc, argv, "-hef=");
     std::string video_path = getCmdOption(argc, argv, "-path=");
-    auto all_devices       = Device::scan_pcie();
+    auto all_devices       = hailort::Device::scan_pcie();
     std::cout << "-I- video path: " << video_path << std::endl;
     std::cout << "-I- hef: " << hef_file << "\n" << std::endl;
 
-    auto device = Device::create_pcie(all_devices.value()[0]);
+    auto device = hailort::Device::create_pcie(all_devices.value()[0]);
     if (!device) {
         std::cerr << "-E- Failed create_pcie " << device.status() << std::endl;
         return device.status();

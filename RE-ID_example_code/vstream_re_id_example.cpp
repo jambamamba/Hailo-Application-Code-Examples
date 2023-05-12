@@ -26,6 +26,7 @@
 #include <iostream>
 #include <chrono>
 #include <mutex>
+#include <thread>
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
@@ -95,7 +96,7 @@ using hailort::MemoryView;
 #define PERSON_DETECTION    1
 
 int num_of_detections_per_frame = 0;
-int num_of_frames_to_process = 300;
+int num_of_frames_to_process = 195;//300;
 int unique_id_counter = 1;
 
 // the database to save the Re-Id vectors
@@ -802,7 +803,6 @@ int main(int argc, char**argv) {
         return vdevice_exp.status();
     }
     auto vdevice = vdevice_exp.release();
-
     // configure the netwrork groups according to the hef files
     auto configured_network_groups_exp = configure_hefs(*vdevice, hef_files);
     if (!configured_network_groups_exp) {

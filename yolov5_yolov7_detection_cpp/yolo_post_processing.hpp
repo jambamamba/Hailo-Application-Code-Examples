@@ -24,6 +24,7 @@
 #include <vector>
 #include <unordered_map>
 #include <stdint.h>
+#include <string>
 
 //constexpr uint32_t IMAGE_SIZE = 640;
 constexpr uint32_t YOLOV5M_IMAGE_WIDTH = 640;
