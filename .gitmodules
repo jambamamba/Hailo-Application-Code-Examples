@@ -7,3 +7,6 @@
 [submodule "RE-ID_example_code/xtl"]
 	path = RE-ID_example_code/xtl
 	url = https://github.com/xtensor-stack/xtl.git
+[submodule "docker"]
+	path = docker
+	url = git@github.com:jambamamba/docker.leila.git
